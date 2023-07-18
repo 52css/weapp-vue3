@@ -237,6 +237,36 @@ function ref(val) {
   return reactive(wrapper)
 }
 
+function toRef(obj, key) {
+  const wrapper = {
+    get value() {
+      return obj[key]
+    },
+    // 允许设置值
+    set value(val) {
+      obj[key] = val
+    }
+  }
+
+  Object.defineProperty(wrapper, '__v_isRef', {
+    value: true
+  })
+
+  return wrapper
+}
+
+function toRefs(obj) {
+  const rtv = {}
+
+  // 使用 for... in 循环遍历对象
+  for (const key in obj) {
+    // 逐个调用 toRef 完成转换
+    rtv[key] = toRef(obj, key)
+  }
+
+  return rtv
+}
+
 function proxyRefs(target) {
   return new Proxy(target, {
     get(target, key, receiver) {
@@ -369,6 +399,11 @@ function proxyRefs(target) {
 //   console.log('变化了')
 // }, {immediate: true})
 
+// 10. 自动脱 ref
+// const count = ref(0)
+// const obj = reactive({ count })
+// console.log(obj.count)
+
 function useHook(content, hook) {
   const splitFieldsAndMethods = (obj) => {
     const fields = {}
@@ -478,6 +513,7 @@ module.exports = {
   effect,
   ref,
   reactive,
+  toRefs,
   watch,
   computed,
   Page: page,

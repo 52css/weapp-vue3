@@ -1,0 +1,37 @@
+{
+  "name": "@52css/weapp-vue3",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/weapp-vue3.js",
+  "scripts": {
+    "build": "rollup -c weapp-vue3.config.js --bundleConfigAsCjs --environment BUILD:production",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/52css/weapp-vue3.git"
+  },
+  "keywords": [
+    "weapp-vue3",
+    "weapp",
+    "vue3",
+    "hooks"
+  ],
+  "author": "52css",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/ui": "latest",
+    "rollup": "^3.26.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-uglify": "^6.0.4",
+    "uglify-es": "^3.3.9",
+    "vite": "latest",
+    "vitest": "latest"
+  },
+  "stackblitz": {
+    "startCommand": "npm run test:ui"
+  }
+}

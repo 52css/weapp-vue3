@@ -8,6 +8,9 @@ const effectStack = []
 const ITERATE_KEY = Symbol()
 const MAP_KEY_ITERATE_KEY = Symbol()
 
+// 一个标记变量，代表是否进行追踪。默认值为 true, 即允许追踪
+let shouldTrack = true
+
 function effect(fn, options = {}) {
   const effectFn = () => {
     cleanup(effectFn)
@@ -36,9 +39,7 @@ function effect(fn, options = {}) {
 }
 
 function track(target, key) {
-  if (!activeEffect) {
-    return target[key]
-  }
+  if (!activeEffect || !shouldTrack) return
   let depsMap = bucket.get(target)
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()))
@@ -264,8 +265,6 @@ const arrayInstrumentations = {}
   }
 });
 
-// 一个标记变量，代表是否进行追踪。默认值为 true, 即允许追踪
-let shouldTrack = true
 
 ;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(method => {
   // 取得原始 push 方法
@@ -440,7 +439,8 @@ const mutableInstrumentations = {
   },
   [Symbol.iterator]: iterationMethod,
   entries: iterationMethod,
-  values: valuesIterationMethod
+  values: valuesIterationMethod,
+  keys: keysIterationMethod
 }
 
 function createReactive(obj, isShallow = false, isReadonly = false) {
@@ -607,6 +607,18 @@ function toRefs(obj) {
   }
 
   return rtv
+}
+
+function isReactive(value) {
+  return !!(value && value.__v_isRef);
+}
+
+function toRaw(value) {
+  if (!value.raw) {
+    return value;
+  }
+
+  return value.raw;
 }
 
 function proxyRefs(target) {
@@ -858,6 +870,8 @@ module.exports = {
   readonly,
   shallowReactive,
   toRefs,
+  isReactive,
+  toRaw,
   watch,
   computed,
   Page: page,

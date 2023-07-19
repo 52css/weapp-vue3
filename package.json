@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/weapp-vue3.js",
   "scripts": {
-    "build": "rollup -c weapp-vue3.config.js --bundleConfigAsCjs --environment BUILD:production",
+    "build": "rollup --bundleConfigAsCjs --environment BUILD:production",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"

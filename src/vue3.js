@@ -5,6 +5,7 @@ const bucket = new WeakMap()
 let activeEffect
 // effect 栈
 const effectStack = []
+const ITERATE_KEY = Symbol()
 
 function effect(fn, options = {}) {
   const effectFn = () => {
@@ -49,18 +50,33 @@ function track(target, key) {
   activeEffect.deps.push(deps)
 }
 
-function trigger(target, key) {
+function trigger(target, key, type) {
   const depsMap = bucket.get(target)
   if (!depsMap) return
+  // 取得与 key 相关联的副作用函数
   const effects = depsMap.get(key)
+  // 取得与 ITERATE_KEY 相关联的副作用函数
+  const iterateEffects = depsMap.get(ITERATE_KEY)
 
   const effectsToRun = new Set()
+  // 将与 key 相关联的副作用函数添加到 effectsToRun 中
   effects && effects.forEach(effectFn => {
     // 如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
     if (effectFn !== activeEffect) {
       effectsToRun.add(effectFn)
     }
   })
+
+  // 只有当操作类型为 'ADD' 或 DELETE 时，才触发与 ITERATE_KEY 相关联的副作用函数重新执行
+  if (type === 'ADD' || type === 'DELETE') {
+    // 将与 ITERATE_KEY 相关联的副作用函数添加到 effectsToRun 中
+    iterateEffects && iterateEffects.forEach(effectFn => {
+      if (effectFn !== activeEffect) {
+        effectsToRun.add(effectFn)
+      }
+    });
+  }
+
   effectsToRun.forEach(effectFn => {
     // 如果一个副作用函数存在调度器, 则调用该调度器，并将副作用函数作为参数传入
     if (effectFn.options && effectFn.options.scheduler) {
@@ -214,11 +230,14 @@ function reactive(obj) {
       return res
     },
     set(target, key, newValue, receiver) {
-      const value = target[key]
+      // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
+      const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
+
       // 设置属性值
       const res = Reflect.set(target, key, newValue, receiver)
-      // 把副作用函数从桶里取出并执行
-      trigger(target, key)
+
+      // 将 type 作为第三个参数传递给 trigger 函数
+      trigger(target, key, type)
 
       return res
     }

@@ -211,7 +211,7 @@ function watch(source, cb, options = {}) {
   }
 }
 
-function reactive(obj) {
+function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     // 拦截读取操作
     get(target, key, receiver) {
@@ -219,18 +219,34 @@ function reactive(obj) {
       if (key === 'raw') {
         return target
       }
-      // 建立联系
-      track(target, key)
+
+      // 非只读的时候才需要建立响应联系
+      if (!isReadonly) {
+        // 建立联系
+        track(target, key)
+      }
+
       // 得到原始值结果
       const res = Reflect.get(target, key, receiver)
+
+      if (isShallow) {
+        return res
+      }
+
       if (typeof res === 'object' && res !== null) {
         // 调用 reactive 将结果包装成响应式数据并返回
-        return reactive(res)
+        return isReadonly ? readonly(res) : reactive(res)
       }
+
       // 返回 res
       return res
     },
     set(target, key, newValue, receiver) {
+      // 如果是只读的，则打印警告信息并返回
+      if (isReadonly) {
+        console.warn(`属性 ${key} 只读，不能被修改`)
+        return true
+      }
       // 先获取旧值
       const oldValue = target[key]
 
@@ -251,8 +267,35 @@ function reactive(obj) {
 
 
       return res
+    },
+    deleteProperty(target, key) {
+      // 如果是只读的，则打印警告信息并返回
+      if (isReadonly) {
+        console.warn(`属性 ${key} 只读，不能被删除`)
+        return true
+      }
+      const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+      const res = Reflect.deleteProperty(target, key)
+
+      if (res && hadKey) {
+        trigger(target, key, 'DELETE')
+      }
+
+      return res
     }
   })
+}
+
+function reactive(obj) {
+  return createReactive(obj, true)
+}
+
+function readonly(obj) {
+  return createReactive(obj, false, true)
+}
+
+function shallowReactive(obj) {
+  return createReactive(obj, true /* shallow */, true)
 }
 
 function ref(val) {

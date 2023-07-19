@@ -50,7 +50,7 @@ function track(target, key) {
   activeEffect.deps.push(deps)
 }
 
-function trigger(target, key, type) {
+function trigger(target, key, type, newVal) {
   const depsMap = bucket.get(target)
   if (!depsMap) return
   // 取得与 key 相关联的副作用函数
@@ -73,6 +73,33 @@ function trigger(target, key, type) {
     iterateEffects && iterateEffects.forEach(effectFn => {
       if (effectFn !== activeEffect) {
         effectsToRun.add(effectFn)
+      }
+    });
+  }
+
+  // 当操作类型为 ADD 并且目标对象是数组是，应该取出并执行那些与 length 属性相关联的副作用函数
+  if (type === 'ADD' && Array.isArray(target)) {
+    // 取出与 length 属性相关联的副作用函数
+    const lengthEffects = depsMap.get('length')
+    // 将这些副作用函数添加到 effectsToRun 中, 待执行
+    lengthEffects && lengthEffects.forEach(effectFn => {
+      if (effectFn !== activeEffect) {
+        effectsToRun.add(effectFn)
+      }
+    });
+  }
+
+  // 如果操作目标是数组，并且修改了数组的 length 属性
+  if (Array.isArray(target) && key === 'length') {
+    // 对于索引大于或等于新的 length 值的元素
+    // 需要把所有相关联的副作用函数取出并添加到 effectsToRun 中待执行
+    depsMap.forEach((effects, key) => {
+      if (key >= newVal) {
+        effects.forEach(effectFn => {
+          if (effectFn !== activeEffect) {
+            effectsToRun.add(effectFn)
+          }
+        });
       }
     });
   }
@@ -211,6 +238,43 @@ function watch(source, cb, options = {}) {
   }
 }
 
+const arrayInstrumentations = {}
+
+;['includes', 'indexof', 'lastIndexOf'].forEach(method => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function(...args) {
+    // this 是代理对象，先在代理对象中查找，将结果存储到 res 中
+    let res = originMethod.apply(this, args)
+
+    if (res === false || res === -1) {
+      // res 为 false 说明没找到，通过 this.raw 拿到原始数据，再去其中查找并更新 res 值
+      res = originMethod.apply(this.raw, args)
+    }
+
+    // 返回最终结果
+    return res
+  }
+});
+
+// 一个标记变量，代表是否进行追踪。默认值为 true, 即允许追踪
+let shouldTrack = true
+
+;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(method => {
+  // 取得原始 push 方法
+  const originMethod = Array.prototype[method]
+
+  arrayInstrumentations[method] = function(...args) {
+    // 在执行原始 push 方法之前，先停止追踪
+    shouldTrack = false
+    // 执行原始 push 方法
+    const res = originMethod.apply(this, args)
+    // 执行完毕后恢复追踪
+    shouldTrack = true
+    // 返回结果
+    return res
+  }
+})
+
 function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     // 拦截读取操作
@@ -220,8 +284,14 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         return target
       }
 
+      // 如果操作的目标对象是数组，并且 key 存在于 arrayInstrumentations 上，
+      // 那么返回定义在 arrayInstrumentations 上的值
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver)
+      }
+
       // 非只读的时候才需要建立响应联系
-      if (!isReadonly) {
+      if (!isReadonly && typeof key !== 'symbol') {
         // 建立联系
         track(target, key)
       }
@@ -241,27 +311,31 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       // 返回 res
       return res
     },
-    set(target, key, newValue, receiver) {
+    set(target, key, newVal, receiver) {
       // 如果是只读的，则打印警告信息并返回
       if (isReadonly) {
         console.warn(`属性 ${key} 只读，不能被修改`)
         return true
       }
       // 先获取旧值
-      const oldValue = target[key]
+      const oldVal = target[key]
 
       // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
-      const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
+      const type = Array.isArray(target)
+        // 如果代理目标是数组，则检测被设置的索引值是否小于数组长度
+        // 如果是，则视作 SET 操作，否则视作 ADD 操作
+        ? Number(key) < target.length ? 'SET' : 'ADD'
+        : Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
 
       // 设置属性值
-      const res = Reflect.set(target, key, newValue, receiver)
+      const res = Reflect.set(target, key, newVal, receiver)
 
       // target === receiver.raw 说明 receiver 就是 target 的代理对象
       if (target === receiver.raw) {
         // 比较新值与旧值，只有当他们不全等，并且不都是 NaN 时才触发回调
-        if (newValue !== oldValue && (newValue === newValue || oldValue === oldValue)) {
+        if (newVal !== oldVal && (newVal === newVal || oldVal === oldVal)) {
           // 将 type 作为第三个参数传递给 trigger 函数
-          trigger(target, key, type)
+          trigger(target, key, type, newVal)
         }
       }
 
@@ -282,12 +356,31 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       }
 
       return res
-    }
+    },
+    ownKeys(target) {
+      // 如果操作目标 target 是数组，则使用 length 属性作为 key 并建立响应联系
+      track(target, Array.isArray(target) ? 'length' : ITERATE_KEY);
+      return Reflect.ownKeys(target);
+    },
   })
 }
 
+// 定义一个 Map 实例，存储原始对象到代理对象的映射
+const reactiveMap = new Map()
+
 function reactive(obj) {
-  return createReactive(obj, true)
+  // 优先通过原始对象 obj 寻找之前创建的代理对象，如果找到了，直接返回已有的代理对象
+  const existionProxy = reactiveMap.get(obj)
+
+  if (existionProxy) return existionProxy
+
+  // 否则，创建新的代理对象
+  const proxy = createReactive(obj)
+
+  // 存储到 Map 中，从而避免重复创建
+  reactiveMap.set(obj, proxy)
+
+  return proxy
 }
 
 function readonly(obj) {
@@ -586,6 +679,8 @@ module.exports = {
   effect,
   ref,
   reactive,
+  readonly,
+  shallowReactive,
   toRefs,
   watch,
   computed,

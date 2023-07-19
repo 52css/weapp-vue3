@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@52css/weapp-vue3": "^1.0.4"
+    "@52css/weapp-vue3": "^1.0.6"
   }
 }

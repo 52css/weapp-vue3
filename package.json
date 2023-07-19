@@ -1,6 +1,6 @@
 {
   "name": "@52css/weapp-vue3",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "type": "module",
   "main": "dist/weapp-vue3.js",
   "scripts": {

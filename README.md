@@ -89,21 +89,24 @@ import { Page, ref } from '@52css/weapp-vue3'
 
 Page(() => {
   const count = ref(0)
+  const handleClick = () => {
+    count.value ++
+  }
 
   // 所有定义必须返回
-  return { count }
+  return { count, handleClick }
 })
 ```
 
 wxml
 ```html
-<view>
+<view bind:tap="handleClick">
   count: {{count}}
 </view>
 ```
 
 效果
-![Alt text](ref.png)
+![Alt text](ref.gif)
 
 ### reactive
 
@@ -114,30 +117,54 @@ import { Page, reactive, toRefs } from '@52css/weapp-vue3'
 
 Page(() => {
   const state = reactive({loading: false})
+  const handleClick = () => {
+      state.loading = !state.loading
+  }
 
   // 所有定义必须返回
-  return { ...toRefs(state) }
+  return { ...toRefs(state), handleClick }
 })
 ```
 
 wxml
+```html
+<view bind:tap="handleClick">
+  loading:{{loading}}
+</view>
+```
+效果
+![Alt text](reactive.gif)
 
 ### computed
 
+js
 ```js
 import { Page, ref, computed } from '@52css/weapp-vue3'
 
 Page(() => {
   const count = ref(0)
   const doubleCount = computed(() => count.value * 2)
+  const handleClick = () => {
+    count.value ++
+  }
 
   // 所有定义必须返回
-  return { count, doubleCount }
+  return { count, doubleCount, handleClick }
 })
 ```
+wxml
+```html
+<view bind:tap="handleClick">
+    <view>count: {{count}}</view>
+    <view>doubleCount: {{doubleCount}}</view>
+</view>
+```
+效果
+![Alt text](computed.gif)
 
 ### watch
 
+js
 ```js
 import { Page, ref, watch } from '@52css/weapp-vue3'
 
@@ -148,13 +175,21 @@ Page(() => {
   }
 
   watch(count, (newVal, oldVal) => {
-    console.log('newVal', newVal, oldVal)
+    console.log('newVal', newVal, 'oldVal', oldVal)
   })
 
   // 所有定义必须返回
   return { count, handleClick }
 })
 ```
+xml
+```html
+<view bind:tap="handleClick">
+    count: {{count}}
+</view>
+```
+效果
+![Alt text](watch.gif)
 
 ## 生命周期
 

@@ -1,0 +1,4 @@
+<!--pages/reactive/index.wxml-->
+<view bind:tap="handleClick">
+  loading:{{loading}}
+</view>

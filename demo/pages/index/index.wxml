@@ -1,0 +1,6 @@
+<!--index.wxml-->
+<view class="container">
+  <view bind:tap="handleClick">
+    count: {{count}}
+  </view>
+</view>

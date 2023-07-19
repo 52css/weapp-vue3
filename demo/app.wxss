@@ -1,0 +1,5 @@
+/**app.wxss**/
+page {
+    text-align: center;
+    padding: 100rpx 0;
+}

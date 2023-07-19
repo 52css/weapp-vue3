@@ -215,7 +215,7 @@ function watch(source, cb, options = {}) {
   // 提取 scheduler 调度函数为一个独立的 job 函数
   const job = () => {
     // 在 scheduler 中重新执行副作用函数，得到的新值
-    newValue = effectFn()
+    newValue = unRef(effectFn())
     if (cleanup) {
       cleanup()
     }
@@ -246,7 +246,7 @@ function watch(source, cb, options = {}) {
     job()
   } else {
     // 手动调用副作用函数，拿到的值就是旧值
-    oldValue = effectFn()
+    oldValue = unRef(effectFn())
   }
 }
 

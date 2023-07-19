@@ -1,0 +1,4 @@
+<!--pages/ref/index.wxml-->
+<view bind:tap="handleClick">
+    count: {{count}}
+</view>

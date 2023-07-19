@@ -106,10 +106,100 @@ describe("effect", () => {
       console.log(obj.foo.bar);
     });
 
-    effect(fnSpy)
+    effect(fnSpy);
 
-    obj.foo.bar = 2
+    obj.foo.bar = 2;
     expect(fnSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("arr修改内容能响应", async () => {
+    const arr = reactive(["foo"]);
+    const fnSpy = vi.fn(() => {
+      console.log(arr[0]);
+    });
+    effect(fnSpy);
+    arr[0] = "bar";
+    expect(fnSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("arr修改length能响应", async () => {
+    const arr = reactive(["foo"]);
+    const fnSpy = vi.fn(() => {
+      console.log(arr[0]);
+    });
+    effect(fnSpy);
+    arr.length = 0;
+    expect(fnSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("arr-for...in能响应", async () => {
+    const arr = reactive(["foo"]);
+    const fnSpy = vi.fn(() => {
+      // console.log(arr[0]);
+      for (const key in arr) {
+        console.log(key);
+      }
+    });
+    effect(fnSpy);
+    arr[1] = "bar";
+    arr.length = 0;
+    expect(fnSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("arr-for...of能响应", async () => {
+    const arr = reactive([1, 2, 3, 4, 5]);
+    const fnSpy = vi.fn(() => {
+      // console.log(arr[0]);
+      for (const key of arr) {
+        console.log(key);
+      }
+    });
+    effect(fnSpy);
+    arr[1] = "bar";
+    arr.length = 0;
+    expect(fnSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("arr.values-for...of能响应", async () => {
+    const arr = reactive([1, 2, 3, 4, 5]);
+    const fnSpy = vi.fn(() => {
+      // console.log(arr[0]);
+      for (const key of arr.values()) {
+        console.log(key);
+      }
+    });
+    effect(fnSpy);
+    arr[1] = "bar";
+    arr.length = 0;
+    expect(fnSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("arr-includes普通值能响应", async () => {
+    const arr = reactive([1, 2]);
+    const fnSpy = vi.fn(() => {
+      console.log(arr.includes(1));
+    });
+    effect(fnSpy);
+    arr[0] = 3;
+    expect(fnSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("arr-includes对象能响应", async () => {
+    const obj = {};
+    const arr = reactive([obj]);
+    expect(arr.includes(arr[0])).toBe(true);
+    expect(arr.includes(obj)).toBe(true);
+  });
+
+  it("arr-push相同没有内存移除", async () => {
+    const arr = reactive([]);
+    effect(() => {
+      arr.push(1);
+    });
+    effect(() => {
+      arr.push(1);
+    });
+    expect(arr).toStrictEqual([1, 1]);
   });
 
   it("should run the passed function once (wrapped by a effect)", () => {

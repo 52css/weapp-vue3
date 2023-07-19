@@ -546,9 +546,9 @@ const reactiveMap = new Map()
 
 function reactive(obj) {
   // 优先通过原始对象 obj 寻找之前创建的代理对象，如果找到了，直接返回已有的代理对象
-  const existionProxy = reactiveMap.get(obj)
+  const existingProxy = reactiveMap.get(obj)
 
-  if (existionProxy) return existionProxy
+  if (existingProxy) return existingProxy
 
   // 否则，创建新的代理对象
   const proxy = createReactive(obj)
@@ -577,6 +577,14 @@ function ref(val) {
   })
 
   return reactive(wrapper)
+}
+
+function isRef(value) {
+  return !!value.__v_isRef;
+}
+
+function unRef(ref) {
+  return isRef(ref) ? ref.value : ref;
 }
 
 function toRef(obj, key) {
@@ -624,16 +632,17 @@ function toRaw(value) {
 function proxyRefs(target) {
   return new Proxy(target, {
     get(target, key, receiver) {
-      const value = Reflect.get(target, key, receiver)
-      return value.__v_isRef ? value.value : value
+      // 如果里面是一个 ref 类型的话，那么就返回 .value
+      // 如果不是的话，那么直接返回value 就可以了
+      return unRef(Reflect.get(target, key, receiver));
     },
-    set(target, key, newValue, receiver) {
-      const value = target[key]
-      if (value.__v_isRef) {
-        value.value = newValue
-        return true
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (isRef(oldValue) && !isRef(value)) {
+        return (target[key].value = value);
+      } else {
+        return Reflect.set(target, key, value, receiver);
       }
-      return Reflect.set(target, key, newValue, receiver)
     }
   })
 }
@@ -682,11 +691,6 @@ function proxyRefs(target) {
 
 // obj.foo ++
 // obj.foo ++
-
-// 10. 自动脱 ref
-// const count = ref(0)
-// const obj = reactive({ count })
-// console.log(obj.count)
 
 function useHook(content, hook) {
   const splitFieldsAndMethods = (obj) => {
@@ -796,6 +800,9 @@ function component(hook) {
 module.exports = {
   effect,
   ref,
+  isRef,
+  unRef,
+  proxyRefs,
   reactive,
   readonly,
   shallowReactive,

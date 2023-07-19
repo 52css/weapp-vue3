@@ -2,6 +2,12 @@ import { effect, reactive, isRef, ref, unRef, proxyRefs } from "../src/vue3";
 import { describe, it, expect, vi } from "vitest";
 
 describe("ref", () => {
+  it("自动脱 ref", () => {
+    const count = ref(0)
+    const obj = reactive({ count })
+
+    expect(obj.count).toBe(0);
+  });
   it("should be reactive", () => {
     const a = ref(1);
     let dummy;

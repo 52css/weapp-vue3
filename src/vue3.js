@@ -6,6 +6,7 @@ let activeEffect
 // effect 栈
 const effectStack = []
 const ITERATE_KEY = Symbol()
+const MAP_KEY_ITERATE_KEY = Symbol()
 
 function effect(fn, options = {}) {
   const effectFn = () => {
@@ -68,7 +69,14 @@ function trigger(target, key, type, newVal) {
   })
 
   // 只有当操作类型为 'ADD' 或 DELETE 时，才触发与 ITERATE_KEY 相关联的副作用函数重新执行
-  if (type === 'ADD' || type === 'DELETE') {
+  if (
+    type === 'ADD' ||
+    type === 'DELETE' ||
+    (
+      Object.prototype.toString.call(target) === '[object Map]'
+    )
+  ) {
+    const iterateEffects = depsMap.get(MAP_KEY_ITERATE_KEY)
     // 将与 ITERATE_KEY 相关联的副作用函数添加到 effectsToRun 中
     iterateEffects && iterateEffects.forEach(effectFn => {
       if (effectFn !== activeEffect) {
@@ -275,6 +283,166 @@ let shouldTrack = true
   }
 })
 
+function iterationMethod() {
+  // 获取原始数据
+  const target = this.raw
+  // 获取原始迭代器方法
+  const itr = target[Symbol.iterator]()
+
+  const wrap = (val) => typeof val === 'object' && val !== null ? reactive(val) : val
+
+  track(target, ITERATE_KEY)
+
+  // 返回自定义的迭代器
+  return {
+    next() {
+      // 调用原始迭代器的 next 方法获取 value 和 done
+      const { value, done } = itr.next()
+
+      return {
+        // 如果 value 不是 undefined，则对 value 和 done 进行包裹后返回
+        value: value ? [wrap(value[0]), wrap(value[1])] : value,
+        done
+      }
+    },
+    // 实现可迭代协议
+    [Symbol.iterator]() {
+      return this
+    }
+  }
+}
+
+function valuesIterationMethod() {
+  // 获取原始数据
+  const target = this.raw
+  // 通过 target.values() 获取原始迭代器
+  const itr = target.values()
+
+  const wrap = (val) => typeof val === 'object' ? reactive(val) : val
+
+  track(target, ITERATE_KEY)
+
+  // 将其返回
+  return {
+    next() {
+      const { value, done } = itr.next()
+
+      return {
+        // value 是值，而非键值对，所以只需要包裹 value 即可
+        value: wrap(value),
+        done
+      }
+    },
+    [Symbol.iterator]() {
+      return this
+    }
+  }
+}
+
+function keysIterationMethod() {
+  // 获取原始数据
+  const target = this.raw
+  // 通过 target.keys() 获取原始迭代器
+  const itr = target.keys()
+
+  const wrap = (val) => typeof val === 'object' ? reactive(val) : val
+
+  track(target, MAP_KEY_ITERATE_KEY)
+
+  // 将其返回
+  return {
+    next() {
+      const { value, done } = itr.next()
+
+      return {
+        // value 是值，而非键值对，所以只需要包裹 value 即可
+        value: wrap(value),
+        done
+      }
+    },
+    [Symbol.iterator]() {
+      return this
+    }
+  }
+}
+
+const mutableInstrumentations = {
+  add(key) {
+    // this 仍然指向的是代理对象， 通过 raw 属性获取原始数据对象
+    const target = this.raw
+    // 先判断值是否已经存在
+    const hadKey = target.has(key)
+    // 通过原始数据对象执行 add 方法添加具体的值
+    // 注意，这里不再需要 .bind 了，因为是直接通过 target 调用并执行的
+    const res = target.add(key)
+    if (!hadKey) {
+      // 调用 trigger 函数触发响应，并指定操作类型为 ADD
+      trigger(target, key, 'ADD')
+    }
+    // 返回操作结果
+    return res
+  },
+  delete(key) {
+    const target = this.raw;
+    const hadKey = target.has(key);
+    const res = target.delete(key);
+
+    if (hadKey) {
+      trigger(target, key, 'DELETE');
+    }
+
+    return res
+  },
+  get(key) {
+    // 获取原始数据
+    const target = this.raw
+    // 判断读取的key是否存在
+    const hadKey = target.has(key)
+    // 追踪依赖，建立响应联系
+    track(target, key)
+    // 如果存在，则返回结果。这里要注意的是，如果得到的结果 res 仍然是可代理的数据
+    // 则要返回使用 reactive 包装后的响应式数据
+    if (hadKey) {
+      const res = target.get(key)
+      return typeof res === 'object' ? reactive(res) : res
+    }
+  },
+  set(key, value) {
+    const target = this.raw
+    const had = target.has(key)
+
+    // 获取旧值
+    const oldValue = target.get(key)
+    // 获取原始数据，由于 value 本身可能已经是原始数据，所以此时 value.raw 不存在，则直接使用value
+    const rawValue = value.raw ? value.raw : value
+    // 设置新值
+    target.set(key, rawValue)
+    // 如果不存在，则说明是 ADD 类型的操作，意味着新增
+    if (!had) {
+      trigger(target, key, 'ADD')
+    } else if (oldValue !== value || (oldValue === oldValue && value === value)) {
+      // 如果不存在，并且值变了，则是 SET 类型的操作，意味着修改
+      trigger(target, key, 'SET')
+    }
+  },
+  forEach(callback) {
+    // wrap 函数用来把可代理的值转换为响应式数据
+    const wrap = value => (typeof value === 'object' ? reactive(value) : value)
+    // 取得原始数据
+    const target = this.raw
+    // 与 ITERATE_KEY 建立响应联系
+    track(target, ITERATE_KEY)
+    // 通过原始数据对象调用 forEach 方法, 并把 callback 传递过去
+    target.forEach((v, k) => {
+      // 手动调用callback, 用 wrap 函数包裹 value 和 key 后再传给 callback， 这样就实现了深响应
+      callback.call(thisArg, wrap(v), wrap(k), this)
+    })
+  },
+  [Symbol.iterator]: iterationMethod,
+  entries: iterationMethod,
+  values: valuesIterationMethod
+}
+
 function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     // 拦截读取操作
@@ -283,6 +451,14 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       if (key === 'raw') {
         return target
       }
+
+      if (key === 'size') {
+        track(target, ITERATE_KEY)
+        return Reflect.get(target, key, receiver)
+      }
+
+      // 返回定义在 mutableInstrumentations 对象下的方法
+      return mutableInstrumentations[key]
 
       // 如果操作的目标对象是数组，并且 key 存在于 arrayInstrumentations 上，
       // 那么返回定义在 arrayInstrumentations 上的值

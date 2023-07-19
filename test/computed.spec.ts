@@ -1,7 +1,29 @@
-import { computed, reactive } from "../src/vue3";
+import { computed, effect, reactive } from "../src/vue3";
 import { describe, it, expect, vi } from "vitest";
 
 describe("computed", () => {
+  it("普通值", () => {
+    const obj = reactive({ foo: 1, bar: 2 });
+    const sumRes = computed(() => obj.foo + obj.bar);
+    expect(sumRes.value).toBe(3);
+    expect(sumRes.value).toBe(3);
+    obj.foo++;
+    expect(sumRes.value).toBe(4);
+  });
+
+  it("有effect", () => {
+    const obj = reactive({ foo: 1, bar: 2 });
+    const sumRes = computed(() => obj.foo + obj.bar);
+    let dummy;
+    const fnSpy = vi.fn(() => {
+      dummy = sumRes.value
+    });
+    effect(fnSpy);
+    expect(dummy).toBe(3);
+    obj.foo++;
+    expect(dummy).toBe(4);
+  });
+
   it("happy path", () => {
     const value = reactive({
       foo: 1,

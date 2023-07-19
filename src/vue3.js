@@ -683,40 +683,6 @@ function proxyRefs(target) {
 // obj.foo ++
 // obj.foo ++
 
-// 7.1 增加computed-普通值
-// const obj = reactive({foo: 1, bar: 2})
-// const sumRes = computed(() => obj.foo + obj.bar)
-
-// console.log(sumRes.value)
-// console.log(sumRes.value)
-
-// obj.foo ++
-
-// console.log(sumRes.value)
-
-// 7.2 增加computed-有effect
-// const obj = reactive({foo: 1, bar: 2})
-// const sumRes = computed(() => obj.foo + obj.bar)
-
-// effect(() => {
-//   console.log(sumRes.value)
-// })
-
-// obj.foo ++
-
-// 8. watch
-// const obj = reactive({foo: 1})
-// watch(() => obj.foo, (newVal, oldVal) => {
-//   console.log(newVal, oldVal)
-// })
-// obj.foo ++
-
-// 9. watch 立即执行
-// const obj = reactive({foo: 1})
-// watch(obj, () => {
-//   console.log('变化了')
-// }, {immediate: true})
-
 // 10. 自动脱 ref
 // const count = ref(0)
 // const obj = reactive({ count })

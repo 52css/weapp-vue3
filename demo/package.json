@@ -1,5 +1,5 @@
 {
-  "name": "miniprogram-7",
+  "name": "weapp-vue3-demo",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@52css/weapp-vue3": "^1.0.6"
+    "@52css/weapp-vue3": "^1.0.7"
   }
 }

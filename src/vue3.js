@@ -579,7 +579,7 @@ function ref(val) {
 }
 
 function isRef(value) {
-  return !!value.__v_isRef;
+  return !!(value && value.__v_isRef);
 }
 
 function unRef(ref) {

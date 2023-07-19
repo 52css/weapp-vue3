@@ -1,10 +1,10 @@
 {
   "name": "@52css/weapp-vue3",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "dist/weapp-vue3.js",
   "scripts": {
-    "build": "rollup --bundleConfigAsCjs --environment BUILD:production",
+    "build": "rollup -c rollup.config.js --bundleConfigAsCjs --environment BUILD:production",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"

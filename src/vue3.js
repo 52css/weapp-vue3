@@ -452,13 +452,13 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         return target
       }
 
-      if (key === 'size') {
-        track(target, ITERATE_KEY)
-        return Reflect.get(target, key, receiver)
-      }
+      // if (key === 'size') {
+      //   track(target, ITERATE_KEY)
+      //   return Reflect.get(target, key, receiver)
+      // }
 
-      // 返回定义在 mutableInstrumentations 对象下的方法
-      return mutableInstrumentations[key]
+      // // 返回定义在 mutableInstrumentations 对象下的方法
+      // return mutableInstrumentations[key]
 
       // 如果操作的目标对象是数组，并且 key 存在于 arrayInstrumentations 上，
       // 那么返回定义在 arrayInstrumentations 上的值

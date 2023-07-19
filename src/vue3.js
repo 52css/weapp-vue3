@@ -72,23 +72,6 @@ function trigger(target, key, type, newVal) {
     }
   })
 
-  // 只有当操作类型为 'ADD' 或 DELETE 时，才触发与 ITERATE_KEY 相关联的副作用函数重新执行
-  if (
-    type === 'ADD' ||
-    type === 'DELETE' ||
-    (
-      Object.prototype.toString.call(target) === '[object Map]'
-    )
-  ) {
-    const iterateEffects = depsMap.get(MAP_KEY_ITERATE_KEY)
-    // 将与 ITERATE_KEY 相关联的副作用函数添加到 effectsToRun 中
-    iterateEffects && iterateEffects.forEach(effectFn => {
-      if (effectFn !== activeEffect) {
-        effectsToRun.add(effectFn)
-      }
-    });
-  }
-
   // 当操作类型为 ADD 并且目标对象是数组是，应该取出并执行那些与 length 属性相关联的副作用函数
   if (type === 'ADD' && Array.isArray(target)) {
     // 取出与 length 属性相关联的副作用函数
@@ -115,6 +98,23 @@ function trigger(target, key, type, newVal) {
       }
     });
   }
+
+    // 只有当操作类型为 'ADD' 或 DELETE 时，才触发与 ITERATE_KEY 相关联的副作用函数重新执行
+    if (
+      type === 'ADD' ||
+      type === 'DELETE' ||
+      (
+        Object.prototype.toString.call(target) === '[object Map]'
+      )
+    ) {
+      const iterateEffects = depsMap.get(MAP_KEY_ITERATE_KEY)
+      // 将与 ITERATE_KEY 相关联的副作用函数添加到 effectsToRun 中
+      iterateEffects && iterateEffects.forEach(effectFn => {
+        if (effectFn !== activeEffect) {
+          effectsToRun.add(effectFn)
+        }
+      });
+    }
 
   effectsToRun.forEach(effectFn => {
     // 如果一个副作用函数存在调度器, 则调用该调度器，并将副作用函数作为参数传入
@@ -386,23 +386,22 @@ const mutableInstrumentations = {
     const target = this.raw;
     const hadKey = target.has(key);
     const res = target.delete(key);
-
+    // 当要删除的元素确实存在是，才触发响应
     if (hadKey) {
       trigger(target, key, 'DELETE');
     }
-
     return res
   },
   get(key) {
     // 获取原始数据
     const target = this.raw
     // 判断读取的key是否存在
-    const hadKey = target.has(key)
+    const had = target.has(key)
     // 追踪依赖，建立响应联系
     track(target, key)
     // 如果存在，则返回结果。这里要注意的是，如果得到的结果 res 仍然是可代理的数据
     // 则要返回使用 reactive 包装后的响应式数据
-    if (hadKey) {
+    if (had) {
       const res = target.get(key)
       return typeof res === 'object' ? reactive(res) : res
     }
@@ -410,7 +409,6 @@ const mutableInstrumentations = {
   set(key, value) {
     const target = this.raw
     const had = target.has(key)
-
     // 获取旧值
     const oldValue = target.get(key)
     // 获取原始数据，由于 value 本身可能已经是原始数据，所以此时 value.raw 不存在，则直接使用value
@@ -453,12 +451,12 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         return target
       }
 
-      // if (key === 'size') {
-      //   track(target, ITERATE_KEY)
-      //   return Reflect.get(target, key, receiver)
-      // }
+      if (key === 'size') {
+        track(target, ITERATE_KEY)
+        return Reflect.get(target, key, target)
+      }
 
-      // // 返回定义在 mutableInstrumentations 对象下的方法
+      // 返回定义在 mutableInstrumentations 对象下的方法
       // return mutableInstrumentations[key]
 
       // 如果操作的目标对象是数组，并且 key 存在于 arrayInstrumentations 上，

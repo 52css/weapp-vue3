@@ -638,42 +638,6 @@ function proxyRefs(target) {
   })
 }
 
-// 1. 设计一个完善的响应系统
-// const obj = reactive({text: 123})
-// effect(() => {
-//   console.log('obj.text', obj.text)
-// })
-// setTimeout(() => {
-//   obj.notExist = 'hello vue3'
-// }, 100)
-
-// 2. 分支切换与 cleanup
-// const obj = reactive({ok: true, text: 'hello world'})
-// effect(() => {
-//   console.log('obj.text', obj.ok ? obj.text : 'not')
-// })
-// setTimeout(() => {
-//   obj.ok = false
-// }, 1000)
-
-// 3. 嵌套的effect 与 effect 栈
-// const obj = reactive({foo: true, bar: true})
-// let temp1, temp2
-// effect(() => {
-//   console.log('effectFn1执行')
-
-//   effect(() => {
-//     console.log('effectFn2执行')
-//     temp2 = obj.bar
-//   })
-
-//   temp1 = obj.foo
-// });
-
-// 4. 避免无限递归循环
-// const obj = reactive({foo: 1})
-// effect(() => obj.foo ++)
-
 // 5. 调度执行 - 控制执行顺序
 // const obj = reactive({foo: 1})
 // effect(() => {

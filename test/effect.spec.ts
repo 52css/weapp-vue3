@@ -1,7 +1,64 @@
-import { effect, reactive } from '../src/vue3'
+import { effect, reactive } from "../src/vue3";
 import { describe, it, expect, vi } from "vitest";
 
+function sleep(timer) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timer);
+  });
+}
+
 describe("effect", () => {
+  it("只执行1次", async () => {
+    const obj = reactive({ text: 123 });
+    const fnSpy = vi.fn(() => {
+      console.log("obj.text", obj.text);
+    });
+    effect(fnSpy);
+    await sleep(100);
+    obj.notExist = "hello vue3";
+    expect(fnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("分支切换与 cleanup", async () => {
+    const obj = reactive({ ok: true, text: "hello world" });
+    let dummy;
+    const fnSpy = vi.fn(() => {
+      dummy = obj.ok ? obj.text : "not";
+    });
+    effect(fnSpy);
+    expect(dummy).toBe("hello world");
+    obj.ok = false;
+    expect(dummy).toBe("not");
+  });
+
+  it("嵌套的effect 与 effect 栈", async () => {
+    const obj = reactive({ foo: true, bar: true });
+    let temp1, temp2;
+    const fnSpy2 = vi.fn(() => {
+      console.log('effectFn2执行')
+      temp2 = obj.bar
+    })
+    const fnSpy1 = vi.fn(() => {
+      console.log('effectFn1执行')
+
+      effect(fnSpy2)
+
+      temp1 = obj.foo
+    });
+    effect(fnSpy1);
+    expect(fnSpy1).toHaveBeenCalledTimes(1);
+    expect(fnSpy2).toHaveBeenCalledTimes(1);
+  });
+
+  it("避免无限递归循环", async () => {
+    const obj = reactive({ foo: 1 });
+    const fnSpy = vi.fn(() => {
+      return obj.foo ++;
+    });
+    effect(fnSpy);
+    expect(fnSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("should run the passed function once (wrapped by a effect)", () => {
     const fnSpy = vi.fn(() => {});
     effect(fnSpy);
@@ -27,6 +84,7 @@ describe("effect", () => {
     counter.num1 = counter.num2 = 7;
     expect(dummy).toBe(21);
   });
+
   it("should handle multiple effects", () => {
     let dummy1, dummy2;
     const counter = reactive({ num: 0 });
@@ -63,6 +121,7 @@ describe("effect", () => {
     counter.num = 2;
     expect(dummy).toBe(2);
   });
+
   it("scheduler", () => {
     let dummy;
     let run: any;

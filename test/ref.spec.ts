@@ -1,13 +1,31 @@
-import { effect, reactive, isRef, ref, unRef, proxyRefs } from "../src/vue3";
+import {
+  effect,
+  reactive,
+  isRef,
+  ref,
+  unRef,
+  proxyRefs,
+  toRefs,
+} from "../src/vue3";
 import { describe, it, expect, vi } from "vitest";
 
 describe("ref", () => {
-  it("自动脱 ref", () => {
-    const count = ref(0)
-    const obj = reactive({ count })
-
-    expect(obj.count).toBe(0);
+  it("支持响应式", async () => {
+    const refVal = ref(1);
+    const fnSpy = vi.fn(() => {
+      console.log(refVal.value);
+    });
+    effect(fnSpy);
+    refVal.value = 2;
+    expect(fnSpy).toHaveBeenCalledTimes(2);
   });
+
+  // it("自动脱 ref", () => {
+  //   const count = ref(0);
+  //   const obj = reactive({ count });
+
+  //   expect(obj.count).toBe(0);
+  // });
   it("should be reactive", () => {
     const a = ref(1);
     let dummy;

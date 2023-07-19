@@ -100,6 +100,18 @@ describe("effect", () => {
     // expect(fnSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("浅响应与深响应", async () => {
+    const obj = reactive({ foo: { bar: 1 } });
+    const fnSpy = vi.fn(() => {
+      console.log(obj.foo.bar);
+    });
+
+    effect(fnSpy)
+
+    obj.foo.bar = 2
+    expect(fnSpy).toHaveBeenCalledTimes(2);
+  });
+
   it("should run the passed function once (wrapped by a effect)", () => {
     const fnSpy = vi.fn(() => {});
     effect(fnSpy);

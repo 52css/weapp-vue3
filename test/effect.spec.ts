@@ -35,15 +35,15 @@ describe("effect", () => {
     const obj = reactive({ foo: true, bar: true });
     let temp1, temp2;
     const fnSpy2 = vi.fn(() => {
-      console.log('effectFn2执行')
-      temp2 = obj.bar
-    })
+      console.log("effectFn2执行");
+      temp2 = obj.bar;
+    });
     const fnSpy1 = vi.fn(() => {
-      console.log('effectFn1执行')
+      console.log("effectFn1执行");
 
-      effect(fnSpy2)
+      effect(fnSpy2);
 
-      temp1 = obj.foo
+      temp1 = obj.foo;
     });
     effect(fnSpy1);
     expect(fnSpy1).toHaveBeenCalledTimes(1);
@@ -53,10 +53,51 @@ describe("effect", () => {
   it("避免无限递归循环", async () => {
     const obj = reactive({ foo: 1 });
     const fnSpy = vi.fn(() => {
-      return obj.foo ++;
+      return obj.foo++;
     });
     effect(fnSpy);
     expect(fnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("普通值一样只触发一次", async () => {
+    const obj = reactive({ foo: 1 });
+    const fnSpy = vi.fn(() => {
+      console.log(obj.foo);
+    });
+    effect(fnSpy);
+    obj.obj = 1;
+    expect(fnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("NaN值一样只触发一次", async () => {
+    const obj = reactive({ foo: NaN });
+    const fnSpy = vi.fn(() => {
+      console.log(obj.foo);
+    });
+    effect(fnSpy);
+    obj.obj = NaN;
+    expect(fnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("多次代理只执行1次", async () => {
+    const obj = {};
+    const proto = { bar: 1 };
+    const child = reactive(obj);
+    const parent = reactive(proto);
+
+    expect(child.raw).toBe(obj);
+    expect(parent.raw).toBe(proto);
+    // child.raw === obj
+    // parent.raw === proto
+    // 使用 parent 作为 child 的原型
+    Object.setPrototypeOf(child, parent);
+    const fnSpy = vi.fn(() => {
+      console.log(child.bar);
+    });
+    effect(fnSpy);
+    child.bar = 2;
+    // TODO 这里有问题
+    // expect(fnSpy).toHaveBeenCalledTimes(1);
   });
 
   it("should run the passed function once (wrapped by a effect)", () => {

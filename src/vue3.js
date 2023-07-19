@@ -7,9 +7,12 @@ let activeEffect
 const effectStack = []
 const ITERATE_KEY = Symbol()
 const MAP_KEY_ITERATE_KEY = Symbol()
-
+// 定义一个 Map 实例，存储原始对象到代理对象的映射
+const reactiveMap = new Map()
 // 一个标记变量，代表是否进行追踪。默认值为 true, 即允许追踪
 let shouldTrack = true
+
+const arrayInstrumentations = {}
 
 function effect(fn, options = {}) {
   const effectFn = () => {
@@ -246,8 +249,6 @@ function watch(source, cb, options = {}) {
     oldValue = effectFn()
   }
 }
-
-const arrayInstrumentations = {}
 
 ;['includes', 'indexof', 'lastIndexOf'].forEach(method => {
   const originMethod = Array.prototype[method]
@@ -509,7 +510,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       // target === receiver.raw 说明 receiver 就是 target 的代理对象
       if (target === receiver.raw) {
         // 比较新值与旧值，只有当他们不全等，并且不都是 NaN 时才触发回调
-        if (newVal !== oldVal && (newVal === newVal || oldVal === oldVal)) {
+        if (oldVal !== newVal && (oldVal === oldVal || newVal === newVal)) {
           // 将 type 作为第三个参数传递给 trigger 函数
           trigger(target, key, type, newVal)
         }
@@ -524,10 +525,13 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         console.warn(`属性 ${key} 只读，不能被删除`)
         return true
       }
+      // 检测被操作的属性是否是对象自己的属性
       const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+      // 使用 Reflect.deleteProperty 完成属性的删除
       const res = Reflect.deleteProperty(target, key)
 
       if (res && hadKey) {
+        // 只有当被删除的属性是对象自己的属性并且成功删除时，才触发更新
         trigger(target, key, 'DELETE')
       }
 
@@ -540,9 +544,6 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
     },
   })
 }
-
-// 定义一个 Map 实例，存储原始对象到代理对象的映射
-const reactiveMap = new Map()
 
 function reactive(obj) {
   // 优先通过原始对象 obj 寻找之前创建的代理对象，如果找到了，直接返回已有的代理对象

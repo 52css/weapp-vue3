@@ -1,4 +1,0 @@
-<!--pages/const/index.wxml-->
-<view bind:tap="handleClick">
-  text:{{text}}
-</view>

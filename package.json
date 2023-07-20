@@ -1,10 +1,11 @@
 {
   "name": "@52css/weapp-vue3",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "main": "dist/weapp-vue3.js",
   "scripts": {
-    "build": "rollup -c rollup.config.js --bundleConfigAsCjs --environment BUILD:production",
+    "dev": "rollup -c -w",
+    "build": "rollup -c  --bundleConfigAsCjs --environment BUILD:production",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
@@ -29,9 +30,10 @@
     "rollup-plugin-uglify": "^6.0.4",
     "uglify-es": "^3.3.9",
     "vite": "latest",
-    "vitest": "latest"
-  },
-  "stackblitz": {
-    "startCommand": "npm run test:ui"
+    "vitest": "latest",
+    "@rollup/plugin-typescript": "^8.2.5",
+    "rollup-plugin-sourcemaps": "^0.6.2",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.3"
   }
 }

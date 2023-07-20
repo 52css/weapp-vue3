@@ -1,0 +1,14 @@
+{
+  "name": "@weapp-vue3/reactivity",
+  "version": "1.0.0",
+  "description": "@weapp-vue3/reactivity",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@weapp-vue3/shared": "workspace:^1.0.0"
+  }
+}

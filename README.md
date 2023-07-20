@@ -16,7 +16,7 @@ pnpm install @52css/weapp-vue3 --save
 
 ## 在小程序中构建
 
-![Alt text](build.png)
+![Alt text](./docs/build.png)
 
 ## API
 
@@ -77,7 +77,7 @@ wxml
 ```
 
 效果
-![Alt text](const.gif)
+![Alt text](./docs/const.gif)
 
 
 ### ref
@@ -106,7 +106,7 @@ wxml
 ```
 
 效果
-![Alt text](ref.gif)
+![Alt text](./docs/ref.gif)
 
 ### reactive
 
@@ -133,7 +133,7 @@ wxml
 </view>
 ```
 效果
-![Alt text](reactive.gif)
+![Alt text](./docs/reactive.gif)
 
 ### computed
 
@@ -160,7 +160,7 @@ wxml
 </view>
 ```
 效果
-![Alt text](computed.gif)
+![Alt text](./docs/computed.gif)
 
 ### watch
 
@@ -189,7 +189,7 @@ xml
 </view>
 ```
 效果
-![Alt text](watch.gif)
+![Alt text](./docs/watch.gif)
 
 ## 生命周期
 
@@ -197,4 +197,4 @@ xml
 
 ## 测试结果
 
-![Alt text](test.png)
+![Alt text](./docs/test.png)

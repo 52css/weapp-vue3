@@ -1,5 +1,0 @@
-<!--pages/computed/index.wxml-->
-<view bind:tap="handleClick">
-    <view>count: {{count}}</view>
-    <view>doubleCount: {{doubleCount}}</view>
-</view>

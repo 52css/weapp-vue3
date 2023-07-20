@@ -1,0 +1,19 @@
+{
+  "name": "weapp-vue3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress open",
+    "serve": "serve ."
+  },
+  "keywords": [],
+  "author": "52css",
+  "license": "ISC",
+  "dependencies": {
+    "@weapp-vue3/reactivity": "workspace:^1.0.0",
+    "@weapp-vue3/shared": "workspace:^1.0.0"
+  },
+  "devDependencies": {
+  }
+}
